@@ -12,7 +12,8 @@
   "dependencies": {
     "@fontsource/ibm-plex-sans": "^5.1.1",
     "@fontsource/jetbrains-mono": "^5.1.2",
-    "@fontsource/outfit": "^5.1.1",
+    "@fontsource/orbitron": "^5.1.1",
+    "@fontsource/share-tech-mono": "^5.1.1",
     "jspdf": "^2.5.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

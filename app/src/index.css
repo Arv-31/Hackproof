@@ -1,7 +1,7 @@
-@import '@fontsource/outfit/500.css';
-@import '@fontsource/outfit/600.css';
-@import '@fontsource/outfit/700.css';
-@import '@fontsource/outfit/800.css';
+@import '@fontsource/orbitron/500.css';
+@import '@fontsource/orbitron/700.css';
+@import '@fontsource/orbitron/900.css';
+@import '@fontsource/share-tech-mono/400.css';
 @import '@fontsource/ibm-plex-sans/400.css';
 @import '@fontsource/ibm-plex-sans/600.css';
 @import '@fontsource/jetbrains-mono/400.css';
@@ -13,15 +13,40 @@
 :root { color-scheme: dark; }
 
 body {
-  @apply bg-navy font-body text-ink antialiased;
-  background-image:
-    radial-gradient(1100px 600px at 90% -10%, rgba(20, 184, 166, .12), transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, rgba(59, 130, 246, .08), transparent 60%);
-  background-attachment: fixed;
+  @apply bg-navy-deep font-body text-ink antialiased;
+}
+
+/* CRT scanlines over everything, very faint */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0) 0 2px, rgba(0, 0, 0, .18) 2px 3px);
+  mix-blend-mode: multiply;
 }
 
 h1, h2, h3, h4 { text-wrap: balance; }
-button:focus-visible { outline: 3px solid #14B8A6; outline-offset: 3px; }
+button:focus-visible { outline: 2px solid #00ff41; outline-offset: 3px; }
+::selection { background: #00ff41; color: #000; }
+
+.glow-text { text-shadow: 0 0 12px rgba(0, 255, 65, .55), 0 0 2px rgba(0, 255, 65, .9); }
+.glow-red { text-shadow: 0 0 12px rgba(255, 51, 85, .6); }
+
+/* Panel: black glass with a phosphor edge */
+.panel {
+  @apply rounded-2xl border border-navy-line bg-navy-2/80 backdrop-blur-sm;
+  box-shadow: inset 0 1px 0 rgba(0, 255, 65, .06), 0 20px 50px -30px rgba(0, 0, 0, .9);
+}
+
+/* Corner brackets for "targeting" frames */
+.brackets { position: relative; }
+.brackets::before, .brackets::after {
+  content: ''; position: absolute; width: 18px; height: 18px; border-color: #00ff41; pointer-events: none;
+}
+.brackets::before { top: -1px; left: -1px; border-top: 2px solid; border-left: 2px solid; }
+.brackets::after { bottom: -1px; right: -1px; border-bottom: 2px solid; border-right: 2px solid; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
