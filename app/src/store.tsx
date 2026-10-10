@@ -1,9 +1,9 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react'
 import { SCENARIOS } from './data/catalog'
 import { buildTrace } from './data/trace'
-import type { Phase, TraceEvent } from './types'
+import type { Mode, Phase, TraceEvent } from './types'
 
-export const STEPS = ['Start', 'Module', 'Target', 'Demo', 'Report', 'Presenter'] as const
+export type View = 'home' | 'targets' | 'demo' | 'console' | 'report' | 'presenter'
 
 /** What the presenter can press on the demo screen, in any order. */
 export type Action = 'normal' | 'attack' | 'defenseOn'
@@ -12,14 +12,14 @@ export interface RunRecord {
   id: string
   scenarioId: string
   action: Action
-  /** Which trace was played: attack = succeeded, retest = blocked. */
   outcome: Phase
   defenseOn: boolean
 }
 
 interface LabState {
-  step: number
-  domain: string | null
+  view: View
+  mode: Mode
+  domain: string
   scenarioId: string
   /** Outcome of the last finished run; drives the site and the banners. */
   phase: Phase | null
@@ -32,16 +32,12 @@ interface LabState {
   runs: RunRecord[]
   showPanel: boolean
   technical: boolean
-  module: 'sim' | 'lab'
-  /** Lab module: the demo was opened from the Validate phase and should return there. */
-  returnToLab: boolean
   labPhase: number
 }
 
 const initial: LabState = {
-  step: 0, domain: null, scenarioId: 'login', phase: null, events: [],
-  busy: false, done: {}, broken: {}, defenseOn: {}, runs: [], showPanel: true, technical: false,
-  module: 'sim', returnToLab: false, labPhase: 0,
+  view: 'home', mode: 'cyber', domain: 'shop', scenarioId: 'login', phase: null, events: [],
+  busy: false, done: {}, broken: {}, defenseOn: {}, runs: [], showPanel: true, technical: false, labPhase: 0,
 }
 
 const STEP_MS = 600
@@ -53,62 +49,70 @@ function useLabStore() {
 
   const clearTimers = () => { timers.current.forEach(clearTimeout); timers.current = [] }
   const patch = useCallback((p: Partial<LabState>) => setS(prev => ({ ...prev, ...p })), [])
+  const go = useCallback((view: View) => { patch({ view }); window.scrollTo({ top: 0, behavior: 'smooth' }) }, [patch])
 
-  const go = useCallback((step: number) => { patch({ step }); window.scrollTo({ top: 0, behavior: 'smooth' }) }, [patch])
+  const setMode = useCallback((mode: Mode) => patch({ mode }), [patch])
+
+  const openDomain = useCallback((domain: string) => {
+    clearTimers()
+    const first = SCENARIOS.find(x => x.domainId === domain)!
+    setS(prev => ({ ...prev, domain, scenarioId: first.id, phase: null, events: [], busy: false, labPhase: 0, view: prev.mode === 'cyber' ? 'targets' : 'console' }))
+    window.scrollTo({ top: 0 })
+  }, [])
 
   const openScenario = useCallback((id: string) => {
     clearTimers()
     patch({ scenarioId: id, phase: null, events: [], busy: false })
-    go(3)
+    go('demo')
   }, [go, patch])
 
-  /** Stream a trace into the panel; `after` runs when the last event lands. */
-  const stream = (events: TraceEvent[], after: (prev: LabState) => Partial<LabState>) => {
-    clearTimers()
-    setS(prev => ({ ...prev, busy: true, events: [] }))
-    events.forEach((e, i) => {
-      timers.current.push(window.setTimeout(() => {
-        const last = i === events.length - 1
-        setS(prev => ({ ...prev, events: [...prev.events, e], ...(last ? { busy: false, ...after(prev) } : {}) }))
-      }, STEP_MS * (i + 1)))
-    })
-  }
-
-  const act = useCallback((action: Action) => {
-    const scenario = SCENARIOS.find(x => x.id === s.scenarioId)!
+  const act = useCallback((action: Action, scenarioId?: string) => {
+    const scenario = SCENARIOS.find(x => x.id === (scenarioId ?? s.scenarioId))!
     const on = !!s.defenseOn[scenario.id]
     const id = `r_0${++run.current}`
+    clearTimers()
 
     if (action === 'defenseOn' && on) {
-      // Switching the defense off needs no trace: the site is simply weak again.
-      clearTimers()
-      patch({ defenseOn: { ...s.defenseOn, [scenario.id]: false }, phase: null, events: [], busy: false })
+      setS(prev => ({ ...prev, scenarioId: scenario.id, defenseOn: { ...prev.defenseOn, [scenario.id]: false }, phase: null, events: [], busy: false }))
       return
     }
 
     const outcome: Phase = action === 'normal' ? 'normal' : action === 'defenseOn' ? 'defend' : on ? 'retest' : 'attack'
     const nextOn = action === 'defenseOn' ? true : on
-    if (action === 'defenseOn') patch({ defenseOn: { ...s.defenseOn, [scenario.id]: true } })
+    const events = buildTrace(scenario, outcome, id)
 
-    stream(buildTrace(scenario, outcome, id), prev => ({
-      phase: outcome,
-      broken: outcome === 'attack' ? { ...prev.broken, [scenario.id]: true } : prev.broken,
-      done: outcome === 'retest' && prev.broken[scenario.id] ? { ...prev.done, [scenario.id]: true } : prev.done,
-      runs: [{ id, scenarioId: scenario.id, action, outcome, defenseOn: nextOn }, ...prev.runs].slice(0, 30),
-    }))
-  }, [s.scenarioId, s.defenseOn, patch])
+    setS(prev => ({ ...prev, scenarioId: scenario.id, busy: true, events: [], defenseOn: { ...prev.defenseOn, [scenario.id]: nextOn } }))
+    events.forEach((e, i) => {
+      timers.current.push(window.setTimeout(() => {
+        const last = i === events.length - 1
+        setS(prev => ({
+          ...prev,
+          events: [...prev.events, e],
+          ...(last ? {
+            busy: false,
+            phase: outcome,
+            broken: outcome === 'attack' ? { ...prev.broken, [scenario.id]: true } : prev.broken,
+            done: outcome === 'retest' && prev.broken[scenario.id] ? { ...prev.done, [scenario.id]: true } : prev.done,
+            runs: [{ id, scenarioId: scenario.id, action, outcome, defenseOn: nextOn }, ...prev.runs].slice(0, 40),
+          } : {}),
+        }))
+      }, STEP_MS * (i + 1)))
+    })
+  }, [s.scenarioId, s.defenseOn])
 
   const resetScenario = useCallback(() => {
     clearTimers()
     setS(prev => ({
       ...prev, phase: null, events: [], busy: false,
       defenseOn: { ...prev.defenseOn, [prev.scenarioId]: false },
+      broken: { ...prev.broken, [prev.scenarioId]: false },
+      done: { ...prev.done, [prev.scenarioId]: false },
       runs: prev.runs.filter(r => r.scenarioId !== prev.scenarioId),
     }))
   }, [])
-  const resetLab = useCallback(() => { clearTimers(); setS(initial) }, [])
+  const resetLab = useCallback(() => { clearTimers(); setS(prev => ({ ...initial, mode: prev.mode })) }, [])
 
-  return { s, patch, go, openScenario, act, resetScenario, resetLab }
+  return { s, patch, go, setMode, openDomain, openScenario, act, resetScenario, resetLab }
 }
 
 type Lab = ReturnType<typeof useLabStore>

@@ -1,20 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { BehindTheScenes } from '../components/BehindTheScenes'
 import { ShopShield } from '../components/ShopShield'
+import { MatrixRain } from '../components/MatrixRain'
+import { InboxStage } from '../components/stages/InboxStage'
+import { TrafficStage } from '../components/stages/TrafficStage'
 import { Button, LabelBadge } from '../components/ui'
-import { SCENARIOS } from '../data/catalog'
+import { DOMAINS, SCENARIOS } from '../data/catalog'
 import { useLab, type RunRecord } from '../store'
 import type { Phase, SitePage } from '../types'
 
 const STATUS: Record<Phase, { cls: string; title: string; text: string }> = {
-  normal: { cls: 'border-sky-400/60 bg-sky-500/10 text-sky-100', title: 'Normal use', text: 'This is how the site should work.' },
+  normal: { cls: 'border-teal/60 bg-teal/10 text-teal-2', title: 'Normal use', text: 'This is how the site should work.' },
   attack: { cls: 'border-attack/70 bg-attack/10 text-red-200', title: 'Attack succeeded · in the lab', text: 'The weakness is real. Nothing left this computer.' },
   defend: { cls: 'border-warn/70 bg-warn/10 text-amber-200', title: 'Defense switched on', text: 'Now run the same attack again.' },
   retest: { cls: 'border-defense/70 bg-defense/10 text-green-200', title: 'Attack blocked', text: 'Same attack, different result. The defense works.' },
 }
 
 const RUN_LABEL: Record<Phase, [string, string]> = {
-  normal: ['Normal use', 'text-sky-300'],
+  normal: ['Normal use', 'text-teal'],
   attack: ['Attack · succeeded', 'text-red-300'],
   defend: ['Defense switched on', 'text-amber-300'],
   retest: ['Attack · blocked', 'text-green-300'],
@@ -23,6 +26,7 @@ const RUN_LABEL: Record<Phase, [string, string]> = {
 export function DemoScreen() {
   const { s, patch, go, act, resetScenario } = useLab()
   const scenario = SCENARIOS.find(x => x.id === s.scenarioId)!
+  const domain = DOMAINS.find(d => d.id === scenario.domainId)!
   const defenseOn = !!s.defenseOn[scenario.id]
   const runs = s.runs.filter(r => r.scenarioId === scenario.id)
   const [page, setPage] = useState<SitePage>(scenario.page)
@@ -50,11 +54,12 @@ export function DemoScreen() {
 
   return (
     <section className="animate-rise">
+      <MatrixRain intensity={0.12} className="fixed inset-0 -z-10" />
       {/* header */}
       <div className="mb-5 flex flex-wrap items-end gap-4">
         <div className="mr-auto">
-          <span className="text-[13px] font-semibold uppercase tracking-[.16em] text-teal">ShopShield · {scenario.severity} severity</span>
-          <h2 className="font-display text-[clamp(28px,3vw,40px)] font-bold tracking-tight">{scenario.title}</h2>
+          <span className="font-mono text-sm uppercase tracking-[.3em] text-attack">&gt; Live attack · {domain.host} · {scenario.severity} severity</span>
+          <h2 className="glow-text font-display text-[clamp(26px,3vw,40px)] font-bold uppercase tracking-wide">{scenario.title}</h2>
           <p className="max-w-[60ch] text-ink-muted">{scenario.summary}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -70,7 +75,9 @@ export function DemoScreen() {
       <div className={`grid items-start gap-5 ${s.showPanel ? 'xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]' : ''}`}>
         <div className="grid gap-3">
           <div className={`rounded-[22px] transition-shadow duration-700 ${glow}`}>
-            <ShopShield page={page} onPage={setPage} scenario={scenario.id} phase={s.busy ? null : s.phase} />
+            {scenario.stage === 'shop' && <ShopShield page={page} onPage={setPage} scenario={scenario.id} phase={s.busy ? null : s.phase} />}
+            {scenario.stage === 'inbox' && <InboxStage phase={s.busy ? null : s.phase} />}
+            {scenario.stage === 'traffic' && <TrafficStage phase={s.phase} busy={s.busy} />}
           </div>
           {status && (
             <div className={`flex animate-pop flex-wrap items-baseline gap-x-3 rounded-2xl border px-5 py-3 ${status.cls}`}>
@@ -89,7 +96,7 @@ export function DemoScreen() {
       </div>
 
       {/* controls: every button works at any time */}
-      <div className="sticky bottom-4 z-10 mt-6 grid gap-3 rounded-[24px] border border-navy-line bg-[#091a31]/92 p-4 backdrop-blur-xl">
+      <div className="sticky bottom-4 z-10 mt-6 grid gap-3 rounded-[24px] border border-navy-line bg-black/85 p-4 backdrop-blur-xl">
         <div className="flex flex-wrap items-center gap-3">
           <BigButton tone="blue" disabled={s.busy} onClick={() => act('normal')} icon="▶">Normal Use</BigButton>
           <BigButton tone="red" disabled={s.busy} onClick={() => act('attack')} icon="⚡">Run Attack</BigButton>
@@ -107,7 +114,7 @@ export function DemoScreen() {
 
           <Button tone="ghost" disabled={s.busy} onClick={resetScenario} className="px-5 py-3.5">↺ Reset</Button>
           <span className="flex-1" />
-          {s.done[scenario.id] && !s.busy && <Button onClick={() => go(4)} className="px-6 py-3.5">See the Report →</Button>}
+          {s.done[scenario.id] && !s.busy && <Button onClick={() => go('report')} className="px-6 py-3.5">See the Report →</Button>}
         </div>
         <div className="flex flex-wrap items-center gap-3 border-t border-navy-line pt-3 text-sm">
           <p className="mr-auto flex items-center gap-2 text-ink-muted">
@@ -119,8 +126,8 @@ export function DemoScreen() {
             </span>
             Behind the Scenes
           </button>
-          <button onClick={() => (s.returnToLab ? patch({ returnToLab: false }) : go(2))} className="text-ink-muted hover:text-ink">
-            {s.returnToLab ? '← Back to assessment' : '← Other attacks'}
+          <button onClick={() => go(s.mode === 'ethical' ? 'console' : 'targets')} className="font-mono uppercase tracking-widest text-ink-muted hover:text-ink">
+            {s.mode === 'ethical' ? '← Back to engagement' : '← Other attacks'}
           </button>
         </div>
       </div>
@@ -131,12 +138,12 @@ export function DemoScreen() {
 }
 
 const BIG: Record<'blue' | 'red', string> = {
-  blue: 'from-sky-400 to-blue-600 text-white shadow-[0_10px_34px_-10px_rgba(59,130,246,.9)]',
+  blue: 'from-teal-2 to-teal text-black shadow-glow',
   red: 'from-red-400 to-attack text-white shadow-[0_10px_34px_-10px_rgba(239,68,68,.95)]',
 }
 function BigButton({ tone, icon, children, ...p }: React.ButtonHTMLAttributes<HTMLButtonElement> & { tone: 'blue' | 'red'; icon: string }) {
   return (
-    <button {...p} className={`flex items-center gap-2.5 rounded-2xl bg-gradient-to-b px-7 py-4 font-display text-xl font-bold transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-40 ${BIG[tone]}`}>
+    <button {...p} className={`flex items-center gap-2.5 rounded-xl bg-gradient-to-b px-7 py-4 font-mono text-xl uppercase tracking-wider transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-40 ${BIG[tone]}`}>
       <span aria-hidden>{icon}</span>{children}
     </button>
   )

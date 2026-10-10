@@ -1,69 +1,44 @@
-import { useState } from 'react'
 import { Button, Head, Icon, LabelBadge, sevColor } from '../components/ui'
-import { DOMAINS, SCENARIOS } from '../data/catalog'
+import { DOMAINS, scenariosFor } from '../data/catalog'
 import { useLab } from '../store'
 
+/** Cyber Security mode: pick which attack to watch on the chosen site. */
 export function TargetScreen() {
-  const { s, patch, go, openScenario } = useLab()
-  const [msg, setMsg] = useState('')
-  const domain = DOMAINS.find(d => d.id === s.domain)
+  const { s, go, openScenario } = useLab()
+  const domain = DOMAINS.find(d => d.id === s.domain)!
+  const list = scenariosFor(domain.id)
 
   return (
     <section className="animate-rise">
-      <Head eyebrow="Pick a target" title="Which kind of website?" lead="Every site below is made up. None of them are real companies." />
+      <Head eyebrow={`Target · ${domain.host}`} title={domain.site} lead={domain.why} />
 
-      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr))]">
-        {DOMAINS.map(d => {
-          const on = d.id === s.domain
-          return (
-            <button
-              key={d.id}
-              onClick={() => (d.ready ? (patch({ domain: d.id }), setMsg(''), s.module === 'lab' && go(3)) : setMsg(`${d.site} is coming in a later build.`))}
-              aria-pressed={on}
-              className={`grid content-start gap-2 rounded-[18px] border p-5 text-left transition hover:-translate-y-0.5 ${on ? 'border-teal bg-navy-3 shadow-[0_0_0_4px_rgba(20,184,166,.15)]' : 'border-navy-line bg-navy-2 hover:border-teal'} ${d.ready ? '' : 'opacity-55'}`}
-            >
-              <div className="grid h-11 w-11 place-items-center rounded-xl bg-navy-3 text-teal"><Icon d={d.icon} /></div>
-              <h3 className="font-display text-xl font-bold">{d.name}</h3>
-              <p className="text-sm text-ink-muted"><b className="text-ink">{d.site}</b>. {d.why}</p>
-              <span className={`justify-self-start rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider ${d.ready ? 'bg-teal/15 text-teal' : 'bg-navy-3 text-ink-dim'}`}>{d.ready ? 'Ready' : 'Coming soon'}</span>
-            </button>
-          )
-        })}
+      <div className="mb-5 flex flex-wrap gap-5 font-mono text-sm text-ink-muted">
+        <span className="flex items-center gap-2"><LabelBadge label="executed" /> really runs inside the lab</span>
+        <span className="flex items-center gap-2"><LabelBadge label="simulated" /> safe model with dummy data</span>
+        <span className="flex items-center gap-2"><LabelBadge label="explained" /> guided walkthrough</span>
       </div>
-      {msg && <p role="status" className="mt-4 text-warn">{msg}</p>}
 
-      {domain && s.module === 'sim' && (
-        <div className="mt-10 animate-rise">
-          <div className="mb-4 flex flex-wrap items-end gap-4">
-            <h3 className="mr-auto font-display text-2xl font-bold">Attacks on {domain.site}</h3>
-            <div className="flex flex-wrap gap-4 text-sm text-ink-muted">
-              <span className="flex items-center gap-2"><LabelBadge label="executed" /> really runs, inside the lab</span>
-              <span className="flex items-center gap-2"><LabelBadge label="simulated" /> safe model</span>
-              <span className="flex items-center gap-2"><LabelBadge label="explained" /> walkthrough</span>
+      <div className="grid gap-4 lg:grid-cols-2">
+        {list.map((sc, i) => (
+          <button key={sc.id} onClick={() => openScenario(sc.id)}
+            className="brackets group panel grid content-start gap-3 p-6 text-left transition hover:-translate-y-0.5 hover:border-attack/70 hover:shadow-glow-red">
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-sm text-ink-dim">ATK-{String(i + 1).padStart(2, '0')}</span>
+              <span className={`font-mono text-xs uppercase tracking-widest ${sevColor(sc.severity)}`}>● {sc.severity}</span>
+              <span className="flex-1" />
+              {s.done[sc.id] && <span className="rounded border border-defense/60 px-2 py-1 font-mono text-xs uppercase tracking-widest text-defense">Fixed</span>}
+              <LabelBadge label={sc.label} />
             </div>
-          </div>
-          <div className="grid gap-3">
-            {SCENARIOS.map(sc => (
-              <button
-                key={sc.id}
-                onClick={() => (sc.ready ? openScenario(sc.id) : setMsg(`"${sc.title}" is planned for a later build.`))}
-                className={`grid items-center gap-4 rounded-[18px] border border-navy-line bg-navy-2 px-6 py-5 text-left transition hover:border-teal sm:grid-cols-[1fr_auto] ${sc.ready ? '' : 'opacity-55'}`}
-              >
-                <div>
-                  <h4 className="font-display text-xl font-semibold">{sc.title}</h4>
-                  <p className="text-ink-muted">{sc.summary}</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                  {s.done[sc.id] && <span className="rounded-full bg-defense/15 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-green-300">Fixed</span>}
-                  <span className={`text-xs font-bold uppercase tracking-wider ${sevColor(sc.severity)}`}>{sc.severity}</span>
-                  {sc.ready ? <LabelBadge label={sc.label} /> : <span className="rounded-full bg-navy-3 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-ink-dim">Later</span>}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      <div className="mt-8"><Button tone="ghost" onClick={() => go(1)}>← Back</Button></div>
+            <h3 className="font-display text-2xl font-bold uppercase tracking-wide text-ink">{sc.title}</h3>
+            <p className="text-lg text-ink-muted">{sc.summary}</p>
+            <div className="flex items-center gap-2 font-mono text-sm text-ink-dim">
+              <Icon d="M12 3 4 7v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z" className="h-4 w-4 text-defense" /> Defense: {sc.fix}
+            </div>
+            <span className="font-mono text-sm uppercase tracking-widest text-attack opacity-70 transition group-hover:opacity-100">▶ Run this attack</span>
+          </button>
+        ))}
+      </div>
+      <div className="mt-8"><Button tone="ghost" onClick={() => go('home')}>← All targets</Button></div>
     </section>
   )
 }

@@ -54,12 +54,16 @@ const REQUEST: Record<string, { method: string; path: string; body: (attack: boo
   login: { method: 'POST', path: '/api/login', body: a => [`email: ${a ? '[lab test input]' : 'meera@shopshield.lab'}`, `password: ${a ? '(not the real password)' : '••••••••••'}`] },
   orders: { method: 'GET', path: '/api/orders/', body: () => ['(no body)', 'signed in as: Meera'] },
   reviews: { method: 'POST', path: '/api/reviews', body: a => [`product: aurora-desk-lamp`, `text: ${a ? 'Great lamp! [hidden test code]' : 'Arrived quickly, works well.'}`] },
+  phish: { method: 'MAIL', path: '/inbox', body: a => [a ? 'from: [parcel-desk@p0sthaven-help.lab]' : 'from: orders@posthaven.lab', `subject: ${a ? 'Your parcel is on hold' : 'Your order has shipped'}`] },
+  flood: { method: 'GET', path: '/api/seats', body: a => [a ? 'visitors: [4,800 per second, simulated]' : 'visitors: 40 per second'] },
 }
 
 const RESPONSE: Record<string, Partial<Record<Phase, [number, string]>>> = {
   login: { normal: [200, 'Signed in as Meera'], attack: [200, 'Signed in as Admin  ← no valid password!'], retest: [401, 'Sign-in refused'] },
   orders: { normal: [200, 'Order #SS-10517 · owner: Meera'], attack: [200, 'Order #SS-10518 · owner: Arjun  ← not Meera’s!'], retest: [403, 'Access denied: not your order'] },
   reviews: { normal: [201, 'Review saved'], attack: [201, 'Review saved as page code  ← will run for every shopper!'], retest: [400, 'Rejected: reviews may only contain text'] },
+  phish: { normal: [250, 'Delivered to inbox'], attack: [250, 'Delivered to inbox  ← sender was never checked!'], retest: [550, 'Quarantined: sender check failed'] },
+  flood: { normal: [200, 'Seat map loaded'], attack: [503, 'Service unavailable  ← real customers locked out!'], retest: [200, 'Seat map loaded (fake traffic dropped)'] },
 }
 
 /** Request in, response out: modelled on an intercepting proxy, simplified. */
@@ -94,7 +98,7 @@ export function RequestInspector({ scenario, phase }: { scenario: Scenario; phas
           <div className={`min-w-0 rounded-xl border bg-[#040d1b] ${bad ? 'border-attack/70' : good ? 'border-defense/70' : 'border-navy-line'}`}>
             <div className="flex items-center justify-between border-b border-navy-line px-3 py-2 text-xs font-semibold uppercase tracking-wider text-ink-dim">
               Response
-              {res && <span className={`rounded px-2 py-0.5 ${res[0] < 300 ? (bad ? 'bg-attack/25 text-red-300' : 'bg-teal/20 text-teal') : 'bg-defense/25 text-green-300'}`}>{res[0]}</span>}
+              {res && <span className={`rounded px-2 py-0.5 ${bad ? 'bg-attack/25 text-red-300' : good ? 'bg-defense/25 text-green-300' : 'bg-teal/20 text-teal'}`}>{res[0]}</span>}
             </div>
             <pre className="whitespace-pre-wrap break-words p-3 font-mono text-[12.5px] leading-6">
               <span className="text-ink-dim">HTTP/1.1 {res?.[0]}</span>{'\n\n'}

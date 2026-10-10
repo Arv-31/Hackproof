@@ -4,6 +4,9 @@ export type Layer = 'browser' | 'api' | 'server_code' | 'database' | 'verdict'
 export type Phase = 'normal' | 'attack' | 'defend' | 'retest'
 export type EventStatus = 'ok' | 'unsafe' | 'fix' | 'safe'
 export type SitePage = 'home' | 'login' | 'product' | 'cart' | 'orders'
+export type Mode = 'cyber' | 'ethical'
+/** How a scenario is drawn on the demo stage. */
+export type Stage = 'shop' | 'inbox' | 'traffic'
 
 /** One step streamed into the Behind the Scenes panel. */
 export interface TraceEvent {
@@ -20,6 +23,8 @@ export interface TraceEvent {
 
 export interface Scenario {
   id: string
+  domainId: string
+  stage: Stage
   title: string
   summary: string
   label: Label
@@ -38,4 +43,6 @@ export interface Domain {
   hosts: string
   ready: boolean
   icon: string
+  host: string
+  client: string
 }

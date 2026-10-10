@@ -1,26 +1,18 @@
 import { useEffect, useState } from 'react'
 import type { Severity } from '../types'
 
-const SCAN_LINES: [string, 'info' | 'ok' | 'warn' | 'safe'][] = [
-  ['lab-scan › target shopshield.lab (authorised, local only)', 'info'],
-  ['lab-scan › checking scope… 1 site, 0 outside hosts', 'ok'],
-  ['found   › web shop          public      pages anyone can visit', 'ok'],
-  ['found   › shop API          public      login, orders, reviews', 'ok'],
-  ['found   › admin page        exposed     should be hidden from outside', 'warn'],
-  ['found   › database          private     not reachable from outside', 'safe'],
-  ['lab-scan › done · 4 services · 1 needs attention', 'info'],
-]
-const LINE_TONE = { info: 'text-sky-300', ok: 'text-ink', warn: 'text-warn', safe: 'text-defense' }
+export type ScanLine = [string, 'info' | 'ok' | 'warn' | 'safe']
+const LINE_TONE = { info: 'text-teal', ok: 'text-ink', warn: 'text-warn', safe: 'text-defense' }
 
 /** Fictional scan of the local lab target, typed out line by line. */
-export function ScanConsole() {
+export function ScanConsole({ lines: SCAN_LINES }: { lines: ScanLine[] }) {
   const [n, setN] = useState(0)
   const [sweep, setSweep] = useState(true)
   useEffect(() => {
     if (n >= SCAN_LINES.length) { setSweep(false); return }
     const t = window.setTimeout(() => setN(n + 1), n === 0 ? 300 : 650)
     return () => clearTimeout(t)
-  }, [n])
+  }, [n, SCAN_LINES.length])
 
   return (
     <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">

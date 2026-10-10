@@ -41,14 +41,31 @@ const fill = (text: string, s: Scenario) =>
     .replace('{severity}', s.severity)
     .replace('{fix}', s.fix)
 
+/* Scenario-specific wording for the simulated demos. Same five layers, same statuses. */
+const OVERRIDES: Record<string, Partial<Record<Phase, [string, string, string][]>>> = {
+  phish: {
+    normal: [['Message arrives', 'A real order update from PostHaven.', 'from: orders@posthaven.lab'], ['Mail server checks it', 'The sender is who it claims to be.', 'sender check: pass'], ['Delivered to inbox', 'Nothing unusual about this message.', 'folder: inbox'], ['No links to strange sites', 'The link points to the real site.', 'link: posthaven.lab'], ['Safe message', 'This is what a normal email looks like.', 'verdict: safe']],
+    attack: [['Fake courier message', 'Urgent tone: “Your parcel is held, pay ₹25 now”.', 'from: parcel-desk@p0sthaven-help.lab'], ['No sender check', 'The server lets it through without checking.', 'sender check: off'], ['Lands in the inbox', 'It looks just like a real message.', 'folder: inbox'], ['Copycat sign-in page', 'The link opens a look-alike page that collects the password.', 'link: p0sthaven-help.lab/login'], ['Visitor was fooled (in the lab)', 'The password went to the copycat page. Nothing real was sent.', 'verdict: tricked']],
+    defend: [['Warning signs shown', 'Odd sender, urgent tone and mismatched links get highlighted.', 'ui: warnings on'], ['Sender check switched on', 'Messages must prove who sent them.', 'sender check: on'], ['Mail filter on', 'Suspicious messages go to a quarantine folder.', 'filter: on'], ['Link check on', 'Links are compared with where they really go.', 'link check: on'], ['Defense ready', 'Now send the same message again.', 'ready: retest']],
+    retest: [['Same fake message', 'The exact same courier message is sent again.', 'from: parcel-desk@p0sthaven-help.lab'], ['Sender check fails', 'The sender cannot prove it is PostHaven.', 'sender check: fail'], ['Moved to quarantine', 'It never reaches the inbox.', 'folder: quarantine'], ['Link flagged', 'The look-alike address is spotted.', 'link: blocked'], ['Scam blocked', 'Same message, different result. The defense works.', 'verdict: blocked']],
+  },
+  flood: {
+    normal: [['Customers browse', 'About 40 people per second look at tickets.', 'requests: 40/s'], ['Gateway calm', 'Every request is answered quickly.', 'response: 120 ms'], ['Servers relaxed', 'Plenty of spare capacity.', 'cpu: 22%'], ['Seats load fine', 'The seat map loads for everyone.', 'errors: 0%'], ['Site healthy', 'This is a normal sale day.', 'status: healthy']],
+    attack: [['Flood begins', 'A swarm of fake visitors sends thousands of requests (simulated).', 'requests: 4,800/s'], ['Gateway overwhelmed', 'Real customers wait in the same queue.', 'response: 9,400 ms'], ['Servers maxed out', 'No capacity left for real work.', 'cpu: 100%'], ['Pages fail to load', 'Most customers see an error page.', 'errors: 71%'], ['Site down (in the lab)', 'Nothing was stolen. The damage is that nobody can buy.', 'status: outage']],
+    defend: [['Rate limiting on', 'Each visitor may only ask so often.', 'limit: 20/s per visitor'], ['Traffic filter on', 'Requests that look automated are dropped early.', 'filter: on'], ['Caching on', 'Popular pages are served from a ready-made copy.', 'cache: on'], ['Extra capacity ready', 'More servers can join when busy.', 'autoscale: on'], ['Defense ready', 'Now send the same flood again.', 'ready: retest']],
+    retest: [['Same flood again', 'The same swarm of fake visitors arrives.', 'requests: 4,800/s'], ['Flood filtered', 'Most fake requests are dropped at the door.', 'dropped: 96%'], ['Servers steady', 'Capacity stays free for real customers.', 'cpu: 38%'], ['Seats load fine', 'Real customers keep buying tickets.', 'errors: 0.4%'], ['Site stays up', 'Same flood, different result. The defense works.', 'status: healthy']],
+  },
+}
+
 export function buildTrace(s: Scenario, phase: Phase, runId: string): TraceEvent[] {
+  const custom = OVERRIDES[s.id]?.[phase]
   return STEPS[phase].map(([layer, title, plain, detail, status], i) => ({
     run_id: runId,
     step: i + 1,
     layer,
-    title,
-    plain: fill(plain, s),
-    detail: fill(detail, s),
+    title: custom ? custom[i][0] : title,
+    plain: custom ? custom[i][1] : fill(plain, s),
+    detail: custom ? custom[i][2] : fill(detail, s),
     status,
     version: phase === 'normal' || phase === 'attack' ? 'vulnerable' : 'protected',
     mode: 'preview',
