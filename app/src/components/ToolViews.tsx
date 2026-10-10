@@ -56,6 +56,7 @@ const REQUEST: Record<string, { method: string; path: string; body: (attack: boo
   reviews: { method: 'POST', path: '/api/reviews', body: a => [`product: aurora-desk-lamp`, `text: ${a ? 'Great lamp! [hidden test code]' : 'Arrived quickly, works well.'}`] },
   guess: { method: 'POST', path: '/api/login', body: a => [a ? 'email: [lab-test-user@shopshield.lab]' : 'email: meera@shopshield.lab', a ? 'password: [guess 612 of 1,000]' : 'password: ••••••••••'] },
   assistant: { method: 'POST', path: '/api/assistant', body: a => ['question: Summarise the reviews', a ? 'context: reviews #1–#4 (#4 has [hidden instruction])' : 'context: reviews #1–#3'] },
+  ransom: { method: 'RUN', path: 'invoice_0923.exe', body: a => [a ? 'user: reception (can change every folder)' : 'user: reception', a ? 'target: [all files on the records share]' : 'action: open patient record'] },
   phish: { method: 'MAIL', path: '/inbox', body: a => [a ? 'from: [parcel-desk@p0sthaven-help.lab]' : 'from: orders@posthaven.lab', `subject: ${a ? 'Your parcel is on hold' : 'Your order has shipped'}`] },
   flood: { method: 'GET', path: '/api/seats', body: a => [a ? 'visitors: [4,800 per second, simulated]' : 'visitors: 40 per second'] },
 }
@@ -66,6 +67,7 @@ const RESPONSE: Record<string, Partial<Record<Phase, [number, string]>>> = {
   reviews: { normal: [201, 'Review saved'], attack: [201, 'Review saved as page code  ← will run for every shopper!'], retest: [400, 'Rejected: reviews may only contain text'] },
   guess: { normal: [200, 'Signed in as Meera'], attack: [200, 'Signed in  ← found after 612 guesses, never slowed down!'], retest: [429, 'Too many attempts. Account paused for 15 minutes.'] },
   assistant: { normal: [200, 'Summary: bright, simple, good value.'], attack: [200, 'Summary… also, staff code LAB-STAFF-90  ← leaked by the AI!'], retest: [200, 'Summary: bright, simple, good value. (1 review ignored as suspicious)'] },
+  ransom: { normal: [200, 'Record opened'], attack: [200, '8 files locked  ← and the backup too!'], retest: [403, 'Blocked: program is not approved to run'] },
   phish: { normal: [250, 'Delivered to inbox'], attack: [250, 'Delivered to inbox  ← sender was never checked!'], retest: [550, 'Quarantined: sender check failed'] },
   flood: { normal: [200, 'Seat map loaded'], attack: [503, 'Service unavailable  ← real customers locked out!'], retest: [200, 'Seat map loaded (fake traffic dropped)'] },
 }

@@ -30,6 +30,14 @@ const SCANS: Record<string, ScanLine[]> = {
     ['found › mailbox storage    private   not reachable from outside', 'safe'],
     ['scan › done · 4 services · 1 needs attention', 'info'],
   ],
+  clinic: [
+    ['scan › target medicore.lab (authorised · local only)', 'info'],
+    ['found › records share      internal  every staff account can change every folder', 'warn'],
+    ['found › app control        off       any program may run', 'warn'],
+    ['found › backups            online    reachable from staff computers', 'warn'],
+    ['found › patient database   private   not reachable from outside', 'safe'],
+    ['scan › done · 4 services · 3 need attention', 'info'],
+  ],
   tickets: [
     ['scan › target triptide.lab (authorised · local only)', 'info'],
     ['found › booking site       public    seat maps and checkout', 'ok'],

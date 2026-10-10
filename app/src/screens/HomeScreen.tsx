@@ -43,7 +43,7 @@ export function HomeScreen() {
       {cyber ? (
         <div key="cyber" className="animate-rise">
           <h2 className="mb-4 font-mono text-sm uppercase tracking-[.3em] text-attack">&gt; Choose a target</h2>
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             {DOMAINS.map(d => {
               const list = scenariosFor(d.id)
               const fixed = list.filter(x => s.done[x.id]).length

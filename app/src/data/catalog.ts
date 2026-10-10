@@ -3,6 +3,7 @@ import type { Domain, Scenario } from '../types'
 export const DOMAINS: Domain[] = [
   { id: 'shop', name: 'Shopping', site: 'ShopShield Store', host: 'shopshield.lab', client: 'ShopShield Retail', why: 'An online store everyone recognises.', hosts: 'Login · Orders · Reviews', ready: true, icon: 'M6 8h12l-1 11H7L6 8Z M9 8a3 3 0 0 1 6 0' },
   { id: 'mail', name: 'Email', site: 'PostHaven Mail', host: 'posthaven.lab', client: 'PostHaven Mail', why: 'Everyone gets messages that are not what they seem.', hosts: 'Inbox · Link check', ready: true, icon: 'M3 5h18v14H3z M3 7l9 6 9-6' },
+  { id: 'clinic', name: 'Hospital', site: 'MediCore Clinic', host: 'medicore.lab', client: 'MediCore Health', why: 'A clinic that cannot work without its files.', hosts: 'Records · Backups', ready: true, icon: 'M12 6v12M6 12h12 M3 3h18v18H3z' },
   { id: 'tickets', name: 'Tickets', site: 'TripTide Tickets', host: 'triptide.lab', client: 'TripTide Travel', why: 'A busy booking site on sale day.', hosts: 'Live traffic · Booking', ready: true, icon: 'M4 8h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4V8Z' },
 ]
 
@@ -13,6 +14,7 @@ export const SCENARIOS: Scenario[] = [
   { id: 'guess', domainId: 'shop', stage: 'shop', title: 'Password guessing', summary: 'A bot tries common passwords again and again, and the login never slows it down.', label: 'executed', severity: 'medium', weight: 2, page: 'login', fix: 'Attempt limit, lockout and 2-step sign-in', ready: true },
   { id: 'assistant', domainId: 'shop', stage: 'chat', title: 'AI assistant tricked', summary: 'The shop’s AI helper reads a review that hides an instruction, and obeys it instead of the shop’s rules.', label: 'simulated', severity: 'high', weight: 3, page: 'product', fix: 'Outside text treated as data, limited powers, human approval', ready: true },
   { id: 'phish', domainId: 'mail', stage: 'inbox', title: 'Fake delivery message', summary: 'A message pretends to be a courier and asks you to sign in on a copycat page.', label: 'simulated', severity: 'high', weight: 3, page: 'home', fix: 'Mail filter + warning signs shown', ready: true },
+  { id: 'ransom', domainId: 'clinic', stage: 'files', title: 'Ransomware on dummy files', summary: 'A fake “invoice” program locks the clinic’s files and demands payment. Only dummy files are used.', label: 'simulated', severity: 'high', weight: 3, page: 'home', fix: 'Backups, blocking unknown programs, limited permissions', ready: true },
   { id: 'flood', domainId: 'tickets', stage: 'traffic', title: 'Traffic flood', summary: 'Far too many requests arrive at once and real customers cannot get in.', label: 'simulated', severity: 'high', weight: 3, page: 'home', fix: 'Rate limiting and caching', ready: true },
 ]
 

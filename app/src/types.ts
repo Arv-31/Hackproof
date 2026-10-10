@@ -6,7 +6,7 @@ export type EventStatus = 'ok' | 'unsafe' | 'fix' | 'safe'
 export type SitePage = 'home' | 'login' | 'product' | 'cart' | 'orders'
 export type Mode = 'cyber' | 'ethical'
 /** How a scenario is drawn on the demo stage. */
-export type Stage = 'shop' | 'inbox' | 'traffic' | 'chat'
+export type Stage = 'shop' | 'inbox' | 'traffic' | 'chat' | 'files'
 
 /** One step streamed into the Behind the Scenes panel. */
 export interface TraceEvent {
