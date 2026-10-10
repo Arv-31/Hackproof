@@ -15,11 +15,16 @@ interface LabState {
   done: Record<string, boolean>
   showPanel: boolean
   technical: boolean
+  module: 'sim' | 'lab'
+  /** Lab module: the demo was opened from the Validate phase and should return there. */
+  returnToLab: boolean
+  labPhase: number
 }
 
 const initial: LabState = {
   step: 0, domain: null, scenarioId: 'login', phase: null, events: [],
   busy: false, done: {}, showPanel: true, technical: false,
+  module: 'sim', returnToLab: false, labPhase: 0,
 }
 
 const STEP_MS = 650

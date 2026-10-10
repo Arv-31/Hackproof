@@ -18,7 +18,7 @@ export function TargetScreen() {
           return (
             <button
               key={d.id}
-              onClick={() => (d.ready ? (patch({ domain: d.id }), setMsg('')) : setMsg(`${d.site} is coming in a later build.`))}
+              onClick={() => (d.ready ? (patch({ domain: d.id }), setMsg(''), s.module === 'lab' && go(3)) : setMsg(`${d.site} is coming in a later build.`))}
               aria-pressed={on}
               className={`grid content-start gap-2 rounded-[18px] border p-5 text-left transition hover:-translate-y-0.5 ${on ? 'border-teal bg-navy-3 shadow-[0_0_0_4px_rgba(20,184,166,.15)]' : 'border-navy-line bg-navy-2 hover:border-teal'} ${d.ready ? '' : 'opacity-55'}`}
             >
@@ -32,7 +32,7 @@ export function TargetScreen() {
       </div>
       {msg && <p role="status" className="mt-4 text-warn">{msg}</p>}
 
-      {domain && (
+      {domain && s.module === 'sim' && (
         <div className="mt-10 animate-rise">
           <div className="mb-4 flex flex-wrap items-end gap-4">
             <h3 className="mr-auto font-display text-2xl font-bold">Attacks on {domain.site}</h3>

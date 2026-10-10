@@ -16,7 +16,7 @@ export function Rail() {
                 <i className={`block h-full bg-gradient-to-r from-teal to-teal-2 transition-all duration-500 ${i <= s.step ? 'w-full' : 'w-0'}`} />
               </div>
               <div className={`mt-1.5 whitespace-nowrap text-xs uppercase tracking-wider ${i === s.step ? 'font-semibold text-ink' : 'text-ink-dim'}`}>
-                {i + 1}. {label}
+                {i + 1}. {i === 3 && s.module === 'lab' ? 'Assess' : label}
               </div>
             </button>
           ))}

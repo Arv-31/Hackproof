@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Rail } from './components/Rail'
 import { DemoScreen } from './screens/DemoScreen'
+import { EthicalLabScreen } from './screens/EthicalLabScreen'
 import { ModuleScreen } from './screens/ModuleScreen'
 import { PresenterScreen } from './screens/PresenterScreen'
 import { ReportScreen } from './screens/ReportScreen'
@@ -20,12 +21,12 @@ function Shell() {
     return () => window.removeEventListener('keydown', onKey)
   }, [go])
 
-  const Screen = SCREENS[s.step]
+  const Screen = s.step === 3 && s.module === 'lab' && !s.returnToLab ? EthicalLabScreen : SCREENS[s.step]
   return (
     <>
       <Rail />
       <main className="mx-auto max-w-[1360px] px-5 pb-16 pt-7">
-        <Screen key={s.step} />
+        <Screen key={`${s.step}-${s.module}-${s.returnToLab}`} />
       </main>
     </>
   )

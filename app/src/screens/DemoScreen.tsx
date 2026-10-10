@@ -75,7 +75,7 @@ export function DemoScreen() {
         <Button tone="ghost" disabled={s.busy} onClick={resetScenario}>Reset Scenario</Button>
         {s.phase === 'retest' && !s.busy && <Button onClick={() => go(4)}>See Report →</Button>}
       </div>
-      <div className="mt-8"><Button tone="ghost" onClick={() => go(2)}>← Back to attacks</Button></div>
+      <div className="mt-8"><Button tone="ghost" onClick={() => (s.returnToLab ? patch({ returnToLab: false }) : go(2))}>{s.returnToLab ? '← Back to assessment' : '← Back to attacks'}</Button></div>
     </section>
   )
 }
