@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { BehindTheScenes } from '../components/BehindTheScenes'
 import { ShopShield } from '../components/ShopShield'
 import { MatrixRain } from '../components/MatrixRain'
+import { ChatStage } from '../components/stages/ChatStage'
 import { InboxStage } from '../components/stages/InboxStage'
 import { TrafficStage } from '../components/stages/TrafficStage'
 import { Button, LabelBadge } from '../components/ui'
@@ -78,6 +79,7 @@ export function DemoScreen() {
             {scenario.stage === 'shop' && <ShopShield page={page} onPage={setPage} scenario={scenario.id} phase={s.busy ? null : s.phase} />}
             {scenario.stage === 'inbox' && <InboxStage phase={s.busy ? null : s.phase} />}
             {scenario.stage === 'traffic' && <TrafficStage phase={s.phase} busy={s.busy} />}
+            {scenario.stage === 'chat' && <ChatStage phase={s.busy ? null : s.phase} />}
           </div>
           {status && (
             <div className={`flex animate-pop flex-wrap items-baseline gap-x-3 rounded-2xl border px-5 py-3 ${status.cls}`}>
