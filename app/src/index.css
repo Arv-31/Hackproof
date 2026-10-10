@@ -1,0 +1,28 @@
+@import '@fontsource/outfit/500.css';
+@import '@fontsource/outfit/600.css';
+@import '@fontsource/outfit/700.css';
+@import '@fontsource/outfit/800.css';
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/jetbrains-mono/400.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+
+body {
+  @apply bg-navy font-body text-ink antialiased;
+  background-image:
+    radial-gradient(1100px 600px at 90% -10%, rgba(20, 184, 166, .12), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(59, 130, 246, .08), transparent 60%);
+  background-attachment: fixed;
+}
+
+h1, h2, h3, h4 { text-wrap: balance; }
+button:focus-visible { outline: 3px solid #14B8A6; outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
