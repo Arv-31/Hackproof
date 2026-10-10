@@ -21,5 +21,4 @@ To deploy: `cd app && npm run build && npx wrangler deploy`.
 
 ---
 
-**Live (password protected):** https://hackproof.scholarai.workers.dev
 **All websites in HackProof are fictional and every attack runs only inside the lab.**
