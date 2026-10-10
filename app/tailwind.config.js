@@ -20,8 +20,21 @@ export default {
       keyframes: {
         rise: { from: { opacity: '0', transform: 'translateY(12px)' }, to: { opacity: '1', transform: 'none' } },
         pop: { from: { opacity: '0', transform: 'scale(.97)' }, to: { opacity: '1', transform: 'none' } },
+        stamp: {
+          '0%': { opacity: '0', transform: 'scale(1.35)' },
+          '12%': { opacity: '1', transform: 'scale(.97)' },
+          '20%': { transform: 'scale(1)' },
+          '85%': { opacity: '1' },
+          '100%': { opacity: '0', transform: 'scale(.98)' },
+        },
+        vignette: { '0%': { opacity: '0' }, '15%': { opacity: '1' }, '80%': { opacity: '.7' }, '100%': { opacity: '0' } },
       },
-      animation: { rise: 'rise .5s cubic-bezier(.2,.7,.2,1) both', pop: 'pop .35s ease both' },
+      animation: {
+        rise: 'rise .5s cubic-bezier(.2,.7,.2,1) both',
+        pop: 'pop .35s ease both',
+        stamp: 'stamp 2.2s cubic-bezier(.2,.7,.2,1) both',
+        vignette: 'vignette 2.2s ease both',
+      },
     },
   },
   plugins: [],

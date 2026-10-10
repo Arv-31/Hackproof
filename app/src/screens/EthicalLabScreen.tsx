@@ -1,4 +1,5 @@
-import { Button, Card, Head, LabelBadge, sevColor } from '../components/ui'
+import { RiskMatrix, ScanConsole, type RiskItem } from '../components/LabVisuals'
+import { Button, Card, LabelBadge } from '../components/ui'
 import { SCENARIOS } from '../data/catalog'
 import { useLab } from '../store'
 
@@ -11,11 +12,11 @@ const PHASES = [
   { id: 'report', name: 'Reporting', short: 'Write it up' },
 ]
 
-const SERVICES = [
-  { name: 'Web shop', where: 'shopshield.lab', state: 'Public', note: 'Pages anyone can visit' },
-  { name: 'Shop API', where: 'shopshield.lab/api', state: 'Public', note: 'Login, orders, reviews' },
-  { name: 'Admin page', where: 'shopshield.lab/admin', state: 'Should be hidden', note: 'Reachable from outside' },
-  { name: 'Database', where: 'internal only', state: 'Private', note: 'Not reachable from outside' },
+const RISKS: RiskItem[] = [
+  { id: 'login', title: 'Login weakness', severity: 'high', impact: 3, ease: 3 },
+  { id: 'orders', title: 'Order privacy weakness', severity: 'high', impact: 3, ease: 2 },
+  { id: 'reviews', title: 'Review weakness', severity: 'medium', impact: 2, ease: 2 },
+  { id: 'admin', title: 'Admin page reachable', severity: 'medium', impact: 2, ease: 1 },
 ]
 
 export function EthicalLabScreen() {
@@ -27,8 +28,13 @@ export function EthicalLabScreen() {
 
   return (
     <section className="animate-rise">
-      <Head eyebrow="Ethical Hacking Lab · ShopShield" title="Assess the target like a professional"
-        lead="You have written permission to test this one fictional site, and nothing else. Work through the six phases." />
+      <div className="mb-5 flex flex-wrap items-end gap-3">
+        <div className="mr-auto">
+          <span className="text-[13px] font-semibold uppercase tracking-[.16em] text-teal">Ethical Hacking Lab · ShopShield</span>
+          <h2 className="font-display text-[clamp(28px,3vw,40px)] font-bold tracking-tight">Assess the target like a professional</h2>
+        </div>
+        <span className="rounded-full border border-defense/50 bg-defense/10 px-3 py-1.5 text-xs font-semibold text-green-300">✓ Written permission · this site only</span>
+      </div>
 
       <ol className="mb-6 grid grid-cols-3 gap-2 md:grid-cols-6">
         {PHASES.map((p, i) => (
@@ -72,41 +78,18 @@ export function EthicalLabScreen() {
         {P.id === 'scan' && (
           <Card>
             <div className="flex flex-wrap items-center gap-3">
-              <h3 className="mr-auto font-display text-xl font-bold">Lab target map</h3>
+              <h3 className="mr-auto font-display text-xl font-bold">Mapping the lab target</h3>
               <span className="rounded-full border border-dashed border-warn/60 px-3 py-1 text-xs font-semibold text-warn">Scans the local lab only</span>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-[15px]">
-                <thead><tr className="text-xs uppercase tracking-wider text-ink-dim"><th className="py-2">Service</th><th>Address</th><th>Exposure</th><th>Note</th></tr></thead>
-                <tbody>
-                  {SERVICES.map(x => (
-                    <tr key={x.name} className="border-t border-navy-line">
-                      <td className="py-3 font-semibold">{x.name}</td>
-                      <td className="font-mono text-sm text-ink-muted">{x.where}</td>
-                      <td className={x.state === 'Should be hidden' ? 'text-warn' : x.state === 'Private' ? 'text-defense' : 'text-ink-muted'}>{x.state}</td>
-                      <td className="text-ink-muted">{x.note}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ScanConsole />
           </Card>
         )}
 
         {P.id === 'assess' && (
           <Card>
-            <h3 className="font-display text-xl font-bold">Possible weaknesses, rated</h3>
-            <p className="text-sm text-ink-dim">Severity = how bad it would be × how easy it is to reach.</p>
-            {findings.map(f => (
-              <div key={f.id} className="flex flex-wrap items-center gap-3 border-t border-navy-line py-3">
-                <span className={`w-20 text-xs font-bold uppercase ${sevColor(f.severity)}`}>{f.severity}</span>
-                <div className="min-w-0 flex-1"><b>{f.title}</b><p className="text-sm text-ink-muted">{f.summary}</p></div>
-              </div>
-            ))}
-            <div className="flex flex-wrap items-center gap-3 border-t border-navy-line py-3">
-              <span className="w-20 text-xs font-bold uppercase text-warn">medium</span>
-              <div className="min-w-0 flex-1"><b>Admin page reachable</b><p className="text-sm text-ink-muted">Should only be reachable from inside the company.</p></div>
-            </div>
+            <h3 className="font-display text-xl font-bold">Rate each weakness</h3>
+            <p className="text-ink-muted">Risk = how bad it would be × how easy it is for an attacker. Top right is the most urgent.</p>
+            <RiskMatrix items={RISKS} />
           </Card>
         )}
 
@@ -146,9 +129,17 @@ export function EthicalLabScreen() {
         )}
       </div>
 
-      <div className="mt-8 flex flex-wrap justify-between gap-3">
-        <Button tone="ghost" onClick={() => (phase ? setPhase(phase - 1) : go(2))}>← Back</Button>
-        {phase < PHASES.length - 1 && <Button onClick={() => setPhase(phase + 1)}>Next: {PHASES[phase + 1].name} →</Button>}
+      <div className="sticky bottom-4 z-10 mt-6 flex flex-wrap items-center gap-4 rounded-[24px] border border-navy-line bg-[#091a31]/90 p-4 backdrop-blur-xl">
+        {phase < PHASES.length - 1 ? (
+          <button onClick={() => setPhase(phase + 1)}
+            className="rounded-2xl bg-gradient-to-b from-teal-2 to-teal px-9 py-4 font-display text-[22px] font-bold text-[#04201d] shadow-[0_10px_40px_-8px_rgba(20,184,166,.9)] transition hover:-translate-y-0.5">
+            Next: {PHASES[phase + 1].name} →
+          </button>
+        ) : (
+          <Button onClick={() => go(4)} className="px-9 py-4 font-display text-[22px]">Open report →</Button>
+        )}
+        <p className="min-w-[200px] flex-1 text-[15px] text-ink-muted">Phase {phase + 1} of {PHASES.length} · {P.short}</p>
+        <Button tone="ghost" onClick={() => (phase ? setPhase(phase - 1) : go(2))} className="px-4 py-2.5 text-[15px]">← {phase ? PHASES[phase - 1].name : 'Targets'}</Button>
       </div>
     </section>
   )

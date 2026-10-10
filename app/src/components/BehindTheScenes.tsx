@@ -8,56 +8,80 @@ const LAYERS: { id: Layer; name: string; short: string }[] = [
   { id: 'verdict', name: 'Verdict', short: '!' },
 ]
 
-const TONE: Record<EventStatus, { border: string; icon: string }> = {
-  ok: { border: 'border-teal', icon: 'bg-teal/15 text-teal' },
-  unsafe: { border: 'border-attack', icon: 'bg-attack/15 text-red-300' },
-  fix: { border: 'border-warn', icon: 'bg-warn/15 text-warn' },
-  safe: { border: 'border-defense', icon: 'bg-defense/15 text-green-300' },
+const TONE: Record<EventStatus, { ring: string; node: string; rgb: string }> = {
+  ok: { ring: 'border-teal/70', node: 'bg-teal text-[#04201d]', rgb: '20,184,166' },
+  unsafe: { ring: 'border-attack/80', node: 'bg-attack text-white', rgb: '239,68,68' },
+  fix: { ring: 'border-warn/80', node: 'bg-warn text-[#2b1a00]', rgb: '245,158,11' },
+  safe: { ring: 'border-defense/80', node: 'bg-defense text-[#052e14]', rgb: '34,197,94' },
 }
 
 interface Props {
   events: TraceEvent[]
   technical: boolean
   onTechnical: (v: boolean) => void
+  busy: boolean
 }
 
-export function BehindTheScenes({ events, technical, onTechnical }: Props) {
+/** The five layers drawn as a pipeline. A glowing packet travels down to the newest event. */
+export function BehindTheScenes({ events, technical, onTechnical, busy }: Props) {
   const runId = events[0]?.run_id
+  const lit = events.length
+  const last = events[lit - 1]
+
   return (
-    <aside className="grid gap-2.5 rounded-[20px] border border-navy-line bg-navy-2 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h3 className="font-display text-xl font-bold">Behind the Scenes</h3>
-          <span className="font-mono text-xs text-ink-dim">{runId ? `run ${runId}` : 'waiting for a run'}</span>
+    <aside className="relative grid gap-3 overflow-hidden rounded-[24px] border border-navy-line bg-navy-deep/80 p-5">
+      <div className="pointer-events-none absolute inset-0 opacity-60 [background-image:linear-gradient(rgba(36,71,111,.25)_1px,transparent_1px),linear-gradient(90deg,rgba(36,71,111,.25)_1px,transparent_1px)] [background-size:28px_28px]" />
+      <div className="relative flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-3">
+          <span className={`h-2.5 w-2.5 rounded-full ${busy ? 'animate-ping bg-teal' : lit ? 'bg-teal' : 'bg-ink-dim'}`} />
+          <div>
+            <h3 className="font-display text-xl font-bold">Behind the Scenes</h3>
+            <span className="font-mono text-xs text-ink-dim">{runId ? `${busy ? 'streaming' : 'complete'} · run ${runId}` : 'waiting for a run'}</span>
+          </div>
         </div>
-        <div className="flex gap-1.5" role="group" aria-label="Detail level">
-          {[['Simple', false], ['Technical', true]].map(([label, v]) => (
-            <button key={String(label)} onClick={() => onTechnical(v as boolean)} aria-pressed={technical === v}
-              className={`rounded-lg px-3 py-1.5 text-[13px] ${technical === v ? 'bg-teal/15 font-semibold text-teal' : 'bg-navy-3 text-ink-muted'}`}>{label}</button>
+        <div className="flex rounded-full border border-navy-line bg-navy-2 p-1" role="group" aria-label="Detail level">
+          {([['Simple', false], ['Technical', true]] as const).map(([label, v]) => (
+            <button key={label} onClick={() => onTechnical(v)} aria-pressed={technical === v}
+              className={`rounded-full px-3.5 py-1 text-[13px] font-semibold transition ${technical === v ? 'bg-teal text-[#04201d]' : 'text-ink-muted'}`}>{label}</button>
           ))}
         </div>
       </div>
 
-      {LAYERS.map((L, i) => {
-        const e = events.find(x => x.layer === L.id)
-        const tone = e ? TONE[e.status] : null
-        return (
-          <div key={L.id}
-            className={`grid grid-cols-[40px_minmax(0,1fr)] gap-3 rounded-xl border bg-navy p-3 transition-all duration-500 ${e ? `translate-x-0 opacity-100 ${tone!.border}` : 'translate-x-1.5 border-navy-line opacity-35'}`}>
-            <div className={`grid h-10 w-10 place-items-center rounded-lg font-mono text-[11px] font-semibold ${tone ? tone.icon : 'bg-navy-3 text-ink-muted'}`}>{L.short}</div>
-            <div className="min-w-0">
-              <div className="text-xs uppercase tracking-[.1em] text-ink-dim">{i + 1} · {L.name}</div>
-              <div className="font-semibold">{e ? e.title : '—'}</div>
-              <p className="text-[14.5px] text-ink-muted">{e ? e.plain : 'Waiting…'}</p>
-              {e && technical && (
-                <pre className="mt-1.5 whitespace-pre-wrap break-words rounded-lg bg-navy-deep px-2.5 py-2 font-mono text-[12.5px] text-sky-200">
-                  {e.detail}{'\n'}<span className="text-ink-dim">version: {e.version} · mode: {e.mode} · step {e.step}</span>
-                </pre>
-              )}
-            </div>
-          </div>
-        )
-      })}
+      <div className="relative">
+        <div className="grid gap-3">
+          {LAYERS.map((L, i) => {
+            const e = events.find(x => x.layer === L.id)
+            const t = e ? TONE[e.status] : null
+            const newest = e && e === last
+            const next = events.find(x => x.layer === LAYERS[i + 1]?.id)
+            return (
+              <div key={L.id} className={`relative grid grid-cols-[46px_minmax(0,1fr)] items-start gap-3 transition-all duration-500 ${e ? 'opacity-100' : 'opacity-40'}`}>
+                {i < LAYERS.length - 1 && (
+                  <span className="absolute -bottom-3 left-[21px] top-[46px] w-[3px] rounded-full transition-all duration-500"
+                    style={next ? { background: `rgb(${TONE[next.status].rgb})`, boxShadow: `0 0 12px rgba(${TONE[next.status].rgb},.7)` } : { background: '#163660' }} />
+                )}
+                <div className={`relative z-10 grid h-[46px] w-[46px] place-items-center rounded-full border-4 border-navy-deep font-mono text-[11px] font-bold transition-all duration-500 ${t ? t.node : 'bg-navy-3 text-ink-dim'}`}
+                  style={newest ? { boxShadow: `0 0 0 6px rgba(${t!.rgb},.18), 0 0 28px rgba(${t!.rgb},.7)` } : undefined}>
+                  {L.short}
+                </div>
+                <div className={`min-w-0 rounded-2xl border bg-navy-2/90 px-4 py-3 backdrop-blur transition-all duration-500 ${t ? t.ring : 'border-navy-line'} ${newest ? 'translate-x-0' : e ? '' : 'translate-x-1'}`}>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-[11px] font-semibold uppercase tracking-[.14em] text-ink-dim">{i + 1} · {L.name}</span>
+                    {e && <span className="font-mono text-[11px] text-ink-dim">step {e.step}</span>}
+                  </div>
+                  <div className="text-[16px] font-semibold">{e ? e.title : 'Waiting…'}</div>
+                  {e && <p className="text-[14.5px] leading-snug text-ink-muted">{e.plain}</p>}
+                  {e && technical && (
+                    <pre className="mt-2 whitespace-pre-wrap break-words rounded-lg border border-navy-line bg-navy-deep px-3 py-2 font-mono text-[12.5px] text-sky-200">
+                      {e.detail}{'\n'}<span className="text-ink-dim">version: {e.version} · mode: {e.mode}</span>
+                    </pre>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </aside>
   )
 }

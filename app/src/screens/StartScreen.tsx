@@ -7,7 +7,7 @@ const LOOP = ['Break it', 'See it', 'Fix it', 'Prove it']
 export function StartScreen() {
   const { go } = useLab()
   return (
-    <section className="relative grid min-h-[72vh] animate-rise place-items-center overflow-hidden rounded-[28px] border border-navy-line bg-navy-deep text-center">
+    <section className="relative -mb-16 -mt-7 ml-[calc(50%-50vw)] grid min-h-[calc(100vh-65px)] w-screen animate-rise place-items-center overflow-hidden bg-navy-deep text-center">
       <div className="absolute inset-0 bg-[radial-gradient(800px_400px_at_50%_0%,rgba(20,184,166,.18),transparent_70%)]" />
       <NetworkCanvas />
       <div className="relative grid justify-items-center gap-6 px-5 py-16">
