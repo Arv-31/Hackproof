@@ -1,38 +1,25 @@
 # HackProof
 
-An interactive cyber attack & defense lab for expo visitors. Watch an attack hit a
-fictional website, see what happens behind the scenes, then watch it get blocked.
+HackProof is an interactive cyber attack and defense lab built for expo visitors. Pick a fictional website, watch an attack succeed, look behind the scenes at what happened, switch the defense on, and prove the same attack now fails.
 
-All targets are fictional and run locally. No real brands, no real attack tooling.
+It has two modes:
+
+- **Cyber Security**: guided live attacks on four fictional sites (shop, mail, tickets, clinic), covering web attacks, password guessing, phishing, AI prompt injection, ransomware on dummy files and traffic floods.
+- **Ethical Hacking**: a six-phase operator console (brief, scan, assess, validate, fix and retest, report).
 
 ## Run it
 
 ```bash
 cd app
 npm install
-npm run dev        # open http://localhost:5173
+npm run dev
 ```
 
-Presenter screen: press **Ctrl + Shift + P**.
+Open http://localhost:5173. Presenter controls: **Ctrl + Shift + P**.
 
-## Two modes (toggle on Home)
+To deploy: `cd app && npm run build && npx wrangler deploy`.
 
-- **Cyber Security:** Home → pick a site → pick an attack → live attack (Normal Use, Run Attack, Defense ON/OFF, Reset in any order) → Report
-- **Ethical Hacking:** Home → open an engagement → 6-phase operator console (Brief, Scan, Assess, Validate, Fix & retest, Report) → Report
+---
 
-Sites: ShopShield Store (3 attacks), PostHaven Mail (fake delivery message), TripTide Tickets (traffic flood).
-
-## Where things live
-
-| Path | What |
-|---|---|
-| `app/src/data/catalog.ts` | Sites and scenarios (add a site or attack = add data here) |
-| `app/src/components/stages/` | Inbox and traffic-graph stages |
-| `app/src/data/trace.ts` | Preview trace-event stream for the Behind the Scenes panel |
-| `app/src/components/ShopShield.tsx` | The fictional ShopShield site (home, login, product, cart, orders) |
-| `app/src/components/BehindTheScenes.tsx` | The 5-layer panel |
-| `app/src/screens/` | One file per screen |
-
-## Status
-
-Front end with preview data. Scenario specifics and the lab backend come next.
+**Live (password protected):** https://hackproof.scholarai.workers.dev
+**All websites in HackProof are fictional and every attack runs only inside the lab.**
