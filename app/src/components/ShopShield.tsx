@@ -77,6 +77,10 @@ export function ShopShield({ page, onPage, scenario, phase }: Props) {
             {active('login') && phase === 'normal' && <Good>Signed in as Meera. This is a normal sign-in.</Good>}
             {active('login') && attacked && <Bad>Signed in as Admin without the right password. (lab result)</Bad>}
             {active('login') && retested && <Good>Sign-in refused. Email or password is wrong.</Good>}
+            {active('guess') && phase === 'normal' && <Good>Signed in as Meera on the first try. This is a normal sign-in.</Good>}
+            {active('guess') && (attacked || retested) && <AttemptMeter blocked={retested} />}
+            {active('guess') && attacked && <Bad>Test account opened after 612 guesses. The login never slowed down. (lab result)</Bad>}
+            {active('guess') && retested && <Good>Locked after 5 wrong tries. The owner gets an alert, and a phone code is still needed.</Good>}
             <small className="text-amber-700">Demo accounts only. Never type a real password here.</small>
           </div>
         )}
@@ -150,6 +154,30 @@ export function ShopShield({ page, onPage, scenario, phase }: Props) {
             {active('orders') && retested && <Good>Access denied. Order #SS-10518 belongs to another customer.</Good>}
           </>
         )}
+      </div>
+    </div>
+  )
+}
+
+/** Attempt counter for the password-guessing demo. Bounded: the lab never goes past 1,000 tries. */
+function AttemptMeter({ blocked }: { blocked: boolean }) {
+  const tries = blocked ? 5 : 612
+  const max = blocked ? 5 : 1000
+  return (
+    <div className={`grid gap-2 rounded-xl border p-3 ${blocked ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'}`}>
+      <div className="flex justify-between text-sm font-semibold">
+        <span>Sign-in attempts</span>
+        <span className="tabular-nums">{tries.toLocaleString()} {blocked ? '/ 5 allowed' : 'tries · no limit'}</span>
+      </div>
+      <div className="h-2.5 overflow-hidden rounded-full bg-white">
+        <i className={`block h-full rounded-full transition-all duration-1000 ${blocked ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${(tries / max) * 100}%` }} />
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {Array.from({ length: 12 }, (_, i) => (
+          <span key={i} className={`rounded px-1.5 py-0.5 font-mono text-[11px] ${blocked && i >= 5 ? 'bg-slate-200 text-slate-400 line-through' : i === 11 && !blocked ? 'bg-red-600 text-white' : 'bg-white text-slate-500'}`}>
+            {blocked && i >= 5 ? 'blocked' : i === 11 && !blocked ? '✓ match' : '✗ wrong'}
+          </span>
+        ))}
       </div>
     </div>
   )
