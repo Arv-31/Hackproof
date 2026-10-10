@@ -1,4 +1,9 @@
-import type { EventStatus, Layer, TraceEvent } from '../types'
+import { useState } from 'react'
+import type { EventStatus, Layer, Phase, Scenario, TraceEvent } from '../types'
+import { RequestInspector, TrafficView } from './ToolViews'
+
+const TABS = [['layers', 'Layers'], ['traffic', 'Traffic'], ['request', 'Request inspector']] as const
+type Tab = typeof TABS[number][0]
 
 const LAYERS: { id: Layer; name: string; short: string }[] = [
   { id: 'browser', name: 'Browser', short: 'WEB' },
@@ -20,10 +25,13 @@ interface Props {
   technical: boolean
   onTechnical: (v: boolean) => void
   busy: boolean
+  scenario: Scenario
+  phase: Phase | null
 }
 
 /** The five layers drawn as a pipeline. A glowing packet travels down to the newest event. */
-export function BehindTheScenes({ events, technical, onTechnical, busy }: Props) {
+export function BehindTheScenes({ events, technical, onTechnical, busy, scenario, phase }: Props) {
+  const [tab, setTab] = useState<Tab>('layers')
   const runId = events[0]?.run_id
   const lit = events.length
   const last = events[lit - 1]
@@ -47,7 +55,16 @@ export function BehindTheScenes({ events, technical, onTechnical, busy }: Props)
         </div>
       </div>
 
-      <div className="relative">
+      <div className="relative flex gap-1 border-b border-navy-line" role="tablist">
+        {TABS.map(([id, label]) => (
+          <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
+            className={`-mb-px border-b-2 px-3.5 py-2 text-sm font-semibold transition ${tab === id ? 'border-teal text-ink' : 'border-transparent text-ink-dim hover:text-ink-muted'}`}>{label}</button>
+        ))}
+      </div>
+
+      {tab === 'traffic' && <div className="relative"><TrafficView events={events} /></div>}
+      {tab === 'request' && <div className="relative"><RequestInspector scenario={scenario} phase={busy ? null : phase} /></div>}
+      <div className={tab === 'layers' ? 'relative' : 'hidden'}>
         <div className="grid gap-3">
           {LAYERS.map((L, i) => {
             const e = events.find(x => x.layer === L.id)

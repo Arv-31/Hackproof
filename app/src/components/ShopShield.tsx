@@ -49,7 +49,7 @@ export function ShopShield({ page, onPage, scenario, phase }: Props) {
         ))}
       </div>
 
-      <div className="grid min-h-[420px] content-start gap-4 p-5">
+      <div className="grid min-h-[340px] content-start gap-4 p-5">
         {page === 'home' && (
           <>
             <div className="rounded-2xl bg-gradient-to-r from-brand to-teal p-6 text-white">

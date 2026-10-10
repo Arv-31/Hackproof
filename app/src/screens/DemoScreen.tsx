@@ -3,55 +3,50 @@ import { BehindTheScenes } from '../components/BehindTheScenes'
 import { ShopShield } from '../components/ShopShield'
 import { Button, LabelBadge } from '../components/ui'
 import { SCENARIOS } from '../data/catalog'
-import { useLab } from '../store'
+import { useLab, type RunRecord } from '../store'
 import type { Phase, SitePage } from '../types'
 
-const STAGES = [
-  { key: 'normal', label: 'Normal use' },
-  { key: 'attack', label: 'Attack' },
-  { key: 'defend', label: 'Defend' },
-  { key: 'retest', label: 'Retest' },
-  { key: 'result', label: 'Result' },
-]
-const ORDER: (Phase | null)[] = [null, 'normal', 'attack', 'defend', 'retest']
-
-/** The one thing to press next, with a line the presenter can read aloud. */
-const NEXT: Record<string, { phase: Phase; label: string; hint: string; cls: string }> = {
-  none: { phase: 'normal', label: 'Show Normal Use', hint: 'First, see how the site is supposed to work.', cls: 'from-sky-400 to-blue-600 text-white shadow-[0_10px_40px_-8px_rgba(59,130,246,.8)]' },
-  normal: { phase: 'attack', label: 'Run Attack', hint: 'Send the lab test input to the weak version of the site.', cls: 'from-red-400 to-attack text-white shadow-[0_10px_40px_-8px_rgba(239,68,68,.9)]' },
-  attack: { phase: 'defend', label: 'Apply Defense', hint: 'Switch on the fix. Nothing else changes.', cls: 'from-green-300 to-defense text-[#052e14] shadow-[0_10px_40px_-8px_rgba(34,197,94,.9)]' },
-  defend: { phase: 'retest', label: 'Retest', hint: 'Send the exact same test again.', cls: 'from-teal-2 to-teal text-[#04201d] shadow-[0_10px_40px_-8px_rgba(20,184,166,.9)]' },
+const STATUS: Record<Phase, { cls: string; title: string; text: string }> = {
+  normal: { cls: 'border-sky-400/60 bg-sky-500/10 text-sky-100', title: 'Normal use', text: 'This is how the site should work.' },
+  attack: { cls: 'border-attack/70 bg-attack/10 text-red-200', title: 'Attack succeeded · in the lab', text: 'The weakness is real. Nothing left this computer.' },
+  defend: { cls: 'border-warn/70 bg-warn/10 text-amber-200', title: 'Defense switched on', text: 'Now run the same attack again.' },
+  retest: { cls: 'border-defense/70 bg-defense/10 text-green-200', title: 'Attack blocked', text: 'Same attack, different result. The defense works.' },
 }
 
-const STATUS: Record<Phase, { cls: string; title: string; text: string }> = {
-  normal: { cls: 'border-teal/60 bg-teal/10 text-teal-100', title: 'Normal use', text: 'This is how the site should work.' },
-  attack: { cls: 'border-attack/70 bg-attack/10 text-red-200', title: 'Attack succeeded · in the lab', text: 'The weakness is real. Nothing left this computer.' },
-  defend: { cls: 'border-warn/70 bg-warn/10 text-amber-200', title: 'Defense applied', text: 'Now run the exact same test again.' },
-  retest: { cls: 'border-defense/70 bg-defense/10 text-green-200', title: 'Attack blocked', text: 'Same test, different result. The defense works.' },
+const RUN_LABEL: Record<Phase, [string, string]> = {
+  normal: ['Normal use', 'text-sky-300'],
+  attack: ['Attack · succeeded', 'text-red-300'],
+  defend: ['Defense switched on', 'text-amber-300'],
+  retest: ['Attack · blocked', 'text-green-300'],
 }
 
 export function DemoScreen() {
-  const { s, patch, go, play, resetScenario } = useLab()
+  const { s, patch, go, act, resetScenario } = useLab()
   const scenario = SCENARIOS.find(x => x.id === s.scenarioId)!
+  const defenseOn = !!s.defenseOn[scenario.id]
+  const runs = s.runs.filter(r => r.scenarioId === scenario.id)
   const [page, setPage] = useState<SitePage>(scenario.page)
   const [moment, setMoment] = useState<'attack' | 'retest' | null>(null)
-  const prev = useRef(s.phase)
+  const lastRun = useRef<string | undefined>(runs[0]?.id)
 
   useEffect(() => setPage(scenario.page), [scenario.page, s.phase])
   useEffect(() => {
-    if (!s.busy && s.phase !== prev.current && (s.phase === 'attack' || s.phase === 'retest')) {
-      setMoment(s.phase)
+    const r = runs[0]
+    if (!r || r.id === lastRun.current) return
+    lastRun.current = r.id
+    if (r.outcome === 'attack' || r.outcome === 'retest') {
+      setMoment(r.outcome)
       const t = window.setTimeout(() => setMoment(null), 2200)
-      prev.current = s.phase
       return () => clearTimeout(t)
     }
-    prev.current = s.phase
-  }, [s.phase, s.busy])
+  }, [runs])
 
-  const stageIdx = ORDER.indexOf(s.phase)
-  const next = !s.busy ? NEXT[s.phase ?? 'none'] : undefined
   const status = s.phase && !s.busy ? STATUS[s.phase] : null
   const glow = s.busy ? '' : s.phase === 'attack' ? 'shadow-[0_0_0_2px_rgba(239,68,68,.8),0_0_60px_-10px_rgba(239,68,68,.7)]' : s.phase === 'retest' ? 'shadow-[0_0_0_2px_rgba(34,197,94,.8),0_0_60px_-10px_rgba(34,197,94,.7)]' : ''
+  const hint = s.busy ? 'Running… watch Behind the Scenes.'
+    : defenseOn ? 'Defense is ON. Run the attack again and see if it still works.'
+    : s.broken[scenario.id] ? 'The attack worked. Switch the defense on, then attack again.'
+    : 'Try the site normally, or run the attack straight away.'
 
   return (
     <section className="animate-rise">
@@ -63,27 +58,13 @@ export function DemoScreen() {
           <p className="max-w-[60ch] text-ink-muted">{scenario.summary}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <span className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold uppercase tracking-wider ${defenseOn ? 'border-defense/60 bg-defense/15 text-green-300' : 'border-attack/50 bg-attack/10 text-red-300'}`}>
+            <span className={`h-2 w-2 rounded-full ${defenseOn ? 'bg-defense' : 'bg-attack'}`} />Defense {defenseOn ? 'on' : 'off'}
+          </span>
           <LabelBadge label={scenario.label} />
           <span className="rounded-full border border-dashed border-warn/60 px-3 py-1.5 text-xs font-semibold text-warn">Preview data</span>
         </div>
       </div>
-
-      {/* stage track */}
-      <ol className="mb-5 grid grid-cols-5 gap-2">
-        {STAGES.map((st, i) => {
-          const done = i < stageIdx || (i === 4 && s.phase === 'retest' && !s.busy)
-          const on = i === stageIdx && s.busy
-          const tone = st.key === 'attack' ? 'bg-attack' : st.key === 'defend' || st.key === 'retest' || st.key === 'result' ? 'bg-defense' : 'bg-sky-500'
-          return (
-            <li key={st.key} className="grid gap-2">
-              <div className="h-2 overflow-hidden rounded-full bg-navy-3">
-                <i className={`block h-full rounded-full transition-all duration-700 ${tone} ${done ? 'w-full' : on ? 'w-1/2 animate-pulse' : 'w-0'}`} />
-              </div>
-              <span className={`text-center text-[13px] font-semibold uppercase tracking-wider ${done || on ? 'text-ink' : 'text-ink-dim'}`}>{done ? '✓ ' : ''}{st.label}</span>
-            </li>
-          )
-        })}
-      </ol>
 
       {/* stage */}
       <div className={`grid items-start gap-5 ${s.showPanel ? 'xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]' : ''}`}>
@@ -98,42 +79,91 @@ export function DemoScreen() {
             </div>
           )}
         </div>
-        {s.showPanel && <BehindTheScenes events={s.events} busy={s.busy} technical={s.technical} onTechnical={v => patch({ technical: v })} />}
+        <div className="grid gap-3">
+          {s.showPanel && (
+            <BehindTheScenes events={s.events} busy={s.busy} technical={s.technical} onTechnical={v => patch({ technical: v })}
+              scenario={scenario} phase={s.phase} />
+          )}
+          <RunLog runs={runs} />
+        </div>
       </div>
 
-      {/* action dock */}
-      <div className="sticky bottom-4 z-10 mt-6 flex flex-wrap items-center gap-4 rounded-[24px] border border-navy-line bg-[#091a31]/90 p-4 backdrop-blur-xl">
-        {next ? (
-          <>
-            <button onClick={() => play(next.phase)} className={`rounded-2xl bg-gradient-to-b px-9 py-4 font-display text-[22px] font-bold transition hover:-translate-y-0.5 ${next.cls}`}>
-              {next.label} →
-            </button>
-            <p className="min-w-[200px] flex-1 text-[15px] text-ink-muted">{next.hint}</p>
-          </>
-        ) : s.busy ? (
-          <p className="flex flex-1 items-center gap-3 font-display text-lg text-ink-muted"><span className="h-3 w-3 animate-ping rounded-full bg-teal" />Running… watch Behind the Scenes</p>
-        ) : (
-          <>
-            <Button onClick={() => go(4)} className="px-9 py-4 font-display text-[22px]">See the Report →</Button>
-            <p className="min-w-[200px] flex-1 text-[15px] text-ink-muted">The weakness is fixed and proven. See the score change.</p>
-          </>
-        )}
-        <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => patch({ showPanel: !s.showPanel })} aria-pressed={s.showPanel} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-ink-muted hover:text-ink">
+      {/* controls: every button works at any time */}
+      <div className="sticky bottom-4 z-10 mt-6 grid gap-3 rounded-[24px] border border-navy-line bg-[#091a31]/92 p-4 backdrop-blur-xl">
+        <div className="flex flex-wrap items-center gap-3">
+          <BigButton tone="blue" disabled={s.busy} onClick={() => act('normal')} icon="▶">Normal Use</BigButton>
+          <BigButton tone="red" disabled={s.busy} onClick={() => act('attack')} icon="⚡">Run Attack</BigButton>
+
+          <button onClick={() => act('defenseOn')} disabled={s.busy} aria-pressed={defenseOn}
+            className={`flex items-center gap-4 rounded-2xl border-2 px-5 py-3 transition disabled:opacity-40 ${defenseOn ? 'border-defense bg-defense/15' : 'border-navy-line bg-navy-2 hover:border-defense/60'}`}>
+            <span className={`relative h-8 w-14 rounded-full transition ${defenseOn ? 'bg-defense' : 'bg-navy-3'}`}>
+              <span className={`absolute top-1 grid h-6 w-6 place-items-center rounded-full bg-white text-xs transition-all ${defenseOn ? 'left-7' : 'left-1'}`}>🛡</span>
+            </span>
+            <span className="text-left">
+              <span className="block font-display text-lg font-bold leading-tight">Defense {defenseOn ? 'ON' : 'OFF'}</span>
+              <span className="block text-xs text-ink-muted">{scenario.fix}</span>
+            </span>
+          </button>
+
+          <Button tone="ghost" disabled={s.busy} onClick={resetScenario} className="px-5 py-3.5">↺ Reset</Button>
+          <span className="flex-1" />
+          {s.done[scenario.id] && !s.busy && <Button onClick={() => go(4)} className="px-6 py-3.5">See the Report →</Button>}
+        </div>
+        <div className="flex flex-wrap items-center gap-3 border-t border-navy-line pt-3 text-sm">
+          <p className="mr-auto flex items-center gap-2 text-ink-muted">
+            {s.busy && <span className="h-2.5 w-2.5 animate-ping rounded-full bg-teal" />}{hint}
+          </p>
+          <button onClick={() => patch({ showPanel: !s.showPanel })} aria-pressed={s.showPanel} className="flex items-center gap-2 text-ink-muted hover:text-ink">
             <span className={`relative h-5 w-9 rounded-full transition ${s.showPanel ? 'bg-teal' : 'bg-navy-3'}`}>
               <span className={`absolute top-[3px] h-[14px] w-[14px] rounded-full bg-ink transition-all ${s.showPanel ? 'left-[19px]' : 'left-[3px]'}`} />
             </span>
             Behind the Scenes
           </button>
-          <Button tone="ghost" disabled={s.busy} onClick={resetScenario} className="px-4 py-2.5 text-[15px]">↺ Reset Scenario</Button>
-          <Button tone="ghost" onClick={() => (s.returnToLab ? patch({ returnToLab: false }) : go(2))} className="px-4 py-2.5 text-[15px]">
-            {s.returnToLab ? '← Assessment' : '← Attacks'}
-          </Button>
+          <button onClick={() => (s.returnToLab ? patch({ returnToLab: false }) : go(2))} className="text-ink-muted hover:text-ink">
+            {s.returnToLab ? '← Back to assessment' : '← Other attacks'}
+          </button>
         </div>
       </div>
 
       {moment && <Moment kind={moment} />}
     </section>
+  )
+}
+
+const BIG: Record<'blue' | 'red', string> = {
+  blue: 'from-sky-400 to-blue-600 text-white shadow-[0_10px_34px_-10px_rgba(59,130,246,.9)]',
+  red: 'from-red-400 to-attack text-white shadow-[0_10px_34px_-10px_rgba(239,68,68,.95)]',
+}
+function BigButton({ tone, icon, children, ...p }: React.ButtonHTMLAttributes<HTMLButtonElement> & { tone: 'blue' | 'red'; icon: string }) {
+  return (
+    <button {...p} className={`flex items-center gap-2.5 rounded-2xl bg-gradient-to-b px-7 py-4 font-display text-xl font-bold transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-40 ${BIG[tone]}`}>
+      <span aria-hidden>{icon}</span>{children}
+    </button>
+  )
+}
+
+function RunLog({ runs }: { runs: RunRecord[] }) {
+  return (
+    <div className="rounded-2xl border border-navy-line bg-navy-2/70 p-4">
+      <div className="mb-2 flex items-baseline justify-between">
+        <h3 className="font-display text-base font-bold">Run log</h3>
+        <span className="font-mono text-xs text-ink-dim">{runs.length} run{runs.length === 1 ? '' : 's'}</span>
+      </div>
+      {runs.length === 0 ? <p className="text-sm text-ink-dim">Nothing run yet.</p> : (
+        <ol className="grid max-h-[156px] gap-1 overflow-y-auto font-mono text-[13px]">
+          {runs.map(r => {
+            const [label, cls] = RUN_LABEL[r.outcome]
+            return (
+              <li key={r.id} className="flex animate-rise items-center gap-3 rounded-lg px-2 py-1 odd:bg-white/[.03]">
+                <span className="text-ink-dim">{r.id}</span>
+                <span className={`mr-auto ${cls}`}>{label}</span>
+                <span className="text-xs text-ink-dim">defense {r.defenseOn ? 'on' : 'off'}</span>
+              </li>
+            )
+          })}
+        </ol>
+      )}
+    </div>
   )
 }
 
@@ -153,7 +183,7 @@ function Moment({ kind }: { kind: 'attack' | 'retest' }) {
         <b className={`font-display text-[clamp(36px,5vw,64px)] font-extrabold leading-none tracking-tight ${bad ? 'text-red-300' : 'text-green-300'}`}>
           {bad ? 'ATTACK SUCCEEDED' : 'ATTACK BLOCKED'}
         </b>
-        <span className="text-lg text-ink-muted">{bad ? 'in the lab · on a fictional site' : 'same test · different result'}</span>
+        <span className="text-lg text-ink-muted">{bad ? 'in the lab · on a fictional site' : 'same attack · defense on'}</span>
       </div>
     </div>
   )
